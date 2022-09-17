@@ -1,6 +1,6 @@
 # Week 1
 
-
+[Main Notes](https://docs.google.com/document/d/e/2PACX-1vRJUuGfzgIdbkalPgg2nQ884CnZkCg314T_OBq-_hfcowPxNIA0-z5OtMTDzuzute9VBHMjNYZFTCc1/pub), [other notes](https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_1_basics_n_setup)
 
 ## Docker + Postgres
 
@@ -39,21 +39,21 @@ One the container is run the only purpose of this container is to run the `pipel
 
 #### 2. Postgres
 
-for running a postgres container the following command is used
+This step creates an image of Postgres db and uses `pgcli` to access the database
+
+- *for running a Postgres container the following command is used*
 
 ``` bash 
 docker run -it \
- -e POSTGRES_USER="root" \
- -e POSTGRES_PASSWORD="root" \
- -e POSTGRES_DB="ny_taxi" \
+ -e POSTGRES_USER="root" \ # The name of our PostgreSQL user
+ -e POSTGRES_PASSWORD="root" \ # The password for our user
+ -e POSTGRES_DB="ny_taxi" \ # The name we want for our database
  -v  ny_taxi_postgres_data:/var/lib/postgresql/data \
- -p 5432:5432 \
+ -p 5432:5432 \ # This maps a postgres port on our host machine to one in our containe
  postgres:13
 ```
 
-volumes is a way to map the folder on the container to the host machine filesystem to physically store the records.
-
-Docker doesnt keep the state next time when the container is started data must be available. We need to mount the folder on the host machine to the docker container. 
+-v flag - volumes is a way to map the folder on the container to the host machine file system to physically store the records. Docker doesn't keep the state next time when the container is started data must be available. We need to mount the folder on the host machine to the docker container. 
 
 Port on the host machine must also be mapped to the port on the docker container to access the Postgres database
 
@@ -62,6 +62,36 @@ the `docker run` command looks for an image of `postgres:13`  if it does not fin
 Side note: if the port is busy  us this to find the process at running at the port[[url](https://stackoverflow.com/questions/38249434/docker-postgres-failed-to-bind-tcp-0-0-0-05432-address-already-in-use)]
 `sudo ss -lptn 'sport = :5432'` 
 and then `kill <PID>`
+
+With the container running now we can access it 
+
+- *Accessing the Postgres db with pgcli*
+
+install pgcli - its a client for Postgres
+
+``` bash
+pip install pgcli
+```
+
+then connect to the pgcli client to the database
+
+```bash
+pgcli -h localhost -p 5432 -u root -d ny_taxi
+```
+
+and then check list of tables using 
+
+```bash
+root@localhost:nytaxi> \dt
+```
+
+#### 3. Populating  Postgres db with Taxi rides dataset 
+
+[video](https://www.youtube.com/watch?v=2JM-ziJt0WI&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb)
+
+**References**
+
+https://github.com/ABZ-Aaron/DataEngineerZoomCamp/tree/master/week_1_basics_n_setup
 
 
 
