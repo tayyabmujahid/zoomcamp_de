@@ -48,7 +48,8 @@ docker run -it \
  -e POSTGRES_USER="root" \ # The name of our PostgreSQL user
  -e POSTGRES_PASSWORD="root" \ # The password for our user
  -e POSTGRES_DB="ny_taxi" \ # The name we want for our database
- -v  ny_taxi_postgres_data:/var/lib/postgresql/data \
+ -v  /home/mujahid/PycharmProjects/zoomcamp_de/week1/ny_taxi_postgres_data \
+ :/var/lib/postgresql/data \
  -p 5432:5432 \ # This maps a postgres port on our host machine to one in our containe
  postgres:13
 ```
@@ -76,7 +77,7 @@ pip install pgcli
 then connect to the pgcli client to the database
 
 ```bash
-pgcli -h localhost -p 5432 -u root -d ny_taxi
+pgcli -h localhost -p 5432 -u root -d ny_taxi 
 ```
 
 and then check list of tables using 
@@ -86,6 +87,82 @@ root@localhost:nytaxi> \dt
 ```
 
 #### 3. Populating  Postgres db with Taxi rides dataset 
+
+The goal here is to 
+
+1. Create a table (by generating schema) in the database to match the dataframe datatype.
+
+2. load the data into the database chunk by chunk using an iterator as the taxi dataset has more than a million rows.
+
+   **Download data and convert to timestamp datatype for columns with timestamp related information**
+
+- Download the data from [here](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page)
+
+  the data here is `.paraquet` format convert that to `.csv` using `df.to_csv` so that data can be handled easily and loaded in chunks.
+
+- convert time related to colums to timestamp datatype using `pd.to_datetime`
+
+  **Create schema from the dataframe of the dataset for creating table in the database**
+
+- install sqlalchemy
+
+  ```bash
+  pip install sqlalchemy
+  ```
+
+- to load this taxi data into the database first a table needs to be created. To generate a schema for the table to generate a DDL(data description language) statement using the following statement
+
+  ```python
+  pd.is.sql.get_schema(df,name="yello_taxi_data")
+  ```
+
+- using sqlalchemy create_engine generate correct Postgres compatible format of DDL and pass this connection  engine to .get_schema statement to generate the schema
+
+- Use this DDL statement to create table in the postgres database
+
+  ```python
+  # This creates a connection to the postgres db that is active at port 5432
+  engine = create_engine('postgresql://root:root@localhost:5432/ny_taxi')
+  engine.connect()
+  
+  # This creates a schema for postgres db with a connection at `con`
+  print(pd.io.sql.get_schema(df,name='yellow_taxi_data',con=engine))
+  ```
+
+  
+
+  **Load Data in chunks**
+
+- Load the df in chunks using and iterator so that we dont enter
+
+  - use the `iterator=True` for the `read_csv` statement; this converts the `df` to a standard python iterator.
+  - `next(df)` can be used to access the chunks
+
+  **Write data into the table**
+
+  
+
+  ```python
+  #this creates only the table with the schema of df but does not add any data as df.head(0)
+  df.head(0).to_sql(name='yellow_taxi_data',con=engine,if_exists='replace')
+  # this appends data(but chunk wise) to the table
+  df.to_sql(name='yellow_taxi_data',con=engine,if_exists='append')
+  ```
+
+  To enter all the chunks the following code can be used
+
+  ```python
+  while True:
+      t_start = time()
+      df = next(df_iter)
+      df.tpep_pickup_datetime= pd.to_datetime(df.tpep_pickup_datetime)
+      df.tpep_dropoff_datetime= pd.to_datetime(df.tpep_dropoff_datetime)
+      df.to_sql(name='yellow_taxi_data',con=engine,if_exists='append')
+      t_end = time()
+      print('inserted another chunk, took %.3f second '%(t_end-t_start))
+  ```
+
+  
 
 [video](https://www.youtube.com/watch?v=2JM-ziJt0WI&list=PL3MmuxUbc_hJed7dXYoJw8DoCuVHhGEQb)
 
